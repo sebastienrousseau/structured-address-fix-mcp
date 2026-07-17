@@ -147,11 +147,10 @@ open-source project, and are recorded here so their status is explicit.
   Best Practices badge (a manual enrolment). Accepted until enrolled.
 
 All **code-fixable** Scorecard checks are satisfied: Pinned-Dependencies
-(SHA-pinned GitHub Actions + hash-pinned `pip` installs), Token-Permissions
-(least-privilege workflow tokens), and SAST (CodeQL on push/PR). Two residual
-Pinned-Dependencies signals are accepted: `pip install .` (installing this
-repository's own checked-out source in `mcp-inspect.yml` and the `Dockerfile`),
-which has no external version or hash to pin; and the unpinned
-`structured-address-fix` core install (the core library is not yet published
-to PyPI, so it is installed from source until it ships — at which point it
-returns to the hash-pinned `requirements/*.txt` set).
+(SHA-pinned GitHub Actions + hash-pinned `pip` installs, including the
+`structured-address-fix` core, which is resolved and hash-pinned from PyPI in
+`requirements/*.txt`), Token-Permissions (least-privilege workflow tokens), and
+SAST (CodeQL on push/PR). One residual Pinned-Dependencies signal is accepted:
+`pip install .` (installing this repository's own checked-out source in
+`mcp-inspect.yml` and the `Dockerfile`), which has no external version or hash
+to pin.

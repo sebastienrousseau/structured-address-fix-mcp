@@ -32,8 +32,6 @@ jobs:
       # cannot be hash-pinned in requirements/test.txt. Install it unpinned
       # from source; replace this step with the hash-pinned line in test.in
       # once structured-address-fix ships to PyPI.
-      - name: Install core library (structured-address-fix, unpinned)
-        run: pip install "structured-address-fix @ git+https://github.com/sebastienrousseau/structured-address-fix.git"
 
       # Hash-pinned install (supply-chain hardening). The local package itself
       # is imported via ``python -m pytest`` (repo root on sys.path) so no
@@ -63,8 +61,6 @@ jobs:
 
       # Unpinned until the core ships to PyPI; mypy --strict needs the core's
       # types resolvable. See the test job for the rationale.
-      - name: Install core library (structured-address-fix, unpinned)
-        run: pip install "structured-address-fix @ git+https://github.com/sebastienrousseau/structured-address-fix.git"
 
       - name: Install lint tools (hash-pinned)
         run: pip install --require-hashes -r requirements/lint.txt

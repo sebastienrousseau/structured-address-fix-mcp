@@ -120,8 +120,6 @@ jobs:
       # The core library this server wraps is not yet on PyPI, so the runtime
       # install below cannot resolve it from the published index. Install it
       # unpinned from source first; drop this step once the core ships.
-      - name: Install core library (structured-address-fix, unpinned)
-        run: pip install "structured-address-fix @ git+https://github.com/sebastienrousseau/structured-address-fix.git"
 
       - name: Install runtime dependencies
         run: poetry install --no-interaction --only main
