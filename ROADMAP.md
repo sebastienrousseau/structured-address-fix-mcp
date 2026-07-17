@@ -11,7 +11,7 @@ assessing, and remediating postal addresses ahead of the 14 November 2026
 cliff, when fully unstructured addresses are rejected across CBPR+, HVPS+,
 T2, CHAPS, and Fedwire.
 
-## Where we are (v0.0.1, shipped 2026-07-17)
+## Where we are (v0.0.2, shipped 2026-07-17)
 
 - **9 tools**, each a thin typed wrapper over the shared
   `structured_address_fix.services` facade:

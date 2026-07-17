@@ -1,6 +1,6 @@
 # Runtime + test dependencies for the CI "test" job.
 # Compiled to test.txt with hashes via: make pip-compile
-structured-address-fix==0.0.1
+structured-address-fix>=0.0.1,<1
 mcp>=1.28.1
 pytest>=9.0.3,<10.0.0
 pytest-asyncio>=0.24,<2.0

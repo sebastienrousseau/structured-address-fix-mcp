@@ -21,4 +21,4 @@ library. Every tool is a typed wrapper over the shared
 identically to the CLI and any other consumer of the core.
 """
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
