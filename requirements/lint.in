@@ -5,7 +5,7 @@
 # types rather than treating them as untyped. ruff/black are pinned to the
 # exact versions the CI lint job uses so the check stays deterministic across
 # uv recompiles.
-structured-address-fix>=0.0.1,<1
+structured-address-fix==0.0.1
 mcp>=1.28.1
 ruff==0.15.22
 black==26.5.1
