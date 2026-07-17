@@ -1,0 +1,3 @@
+# SBOM + license manifest tooling for the release "sbom" job.
+cyclonedx-bom
+pip-licenses

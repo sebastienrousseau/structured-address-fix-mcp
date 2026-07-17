@@ -1,0 +1,16 @@
+# Lint/type-check tooling for the CI "lint" job.
+# Compiled to lint.txt with hashes via: make pip-compile
+#
+# The runtime dep (mcp) is included so mypy --strict can resolve the FastMCP
+# types rather than treating them as untyped. ruff/black are pinned to the
+# exact versions the CI lint job uses so the check stays deterministic across
+# uv recompiles.
+#
+# NOTE: structured-address-fix is not yet on PyPI (see test.in); it is
+# installed separately, unpinned, so mypy resolves the core's types. Re-add
+# the line below and recompile once the core ships to PyPI.
+#   structured-address-fix>=0.1,<1
+mcp>=1.28.1
+ruff==0.15.21
+black==26.5.1
+mypy>=1.11,<3.0

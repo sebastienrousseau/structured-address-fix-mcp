@@ -1,0 +1,15 @@
+# Runtime + test dependencies for the CI "test" job.
+# Compiled to test.txt with hashes via: make pip-compile
+#
+# NOTE: structured-address-fix -- the core library this server is a thin
+# transport over -- is not yet published to PyPI. It cannot be hash-pinned
+# here (uv has nothing to resolve), so it is installed separately, unpinned,
+# from the sibling checkout / git by CI and local dev. Re-add the line below
+# and recompile once the core ships to PyPI to restore a fully hash-pinned
+# test install.
+#   structured-address-fix>=0.1,<1
+mcp>=1.28.1
+pytest>=9.0.3,<10.0.0
+pytest-asyncio>=0.24,<2.0
+pytest-cov>=6.0.0,<8.0.0
+interrogate>=1.7

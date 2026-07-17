@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # The core library this server wraps is not yet published to PyPI, so it
+      # cannot be hash-pinned in requirements/test.txt. Install it unpinned
+      # from source; replace this step with the hash-pinned line in test.in
+      # once structured-address-fix ships to PyPI.
+      - name: Install core library (structured-address-fix, unpinned)
+        run: pip install "structured-address-fix @ git+https://github.com/sebastienrousseau/structured-address-fix.git"
+
+      # Hash-pinned install (supply-chain hardening). The local package itself
+      # is imported via ``python -m pytest`` (repo root on sys.path) so no
+      # unpinnable ``pip install -e .`` is required.
+      - name: Install dependencies (hash-pinned)
+        run: pip install --require-hashes -r requirements/test.txt
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
+
+      - name: Enforce 100% docstring coverage
+        run: interrogate -c pyproject.toml structured_address_fix_mcp
+
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+
+      # Unpinned until the core ships to PyPI; mypy --strict needs the core's
+      # types resolvable. See the test job for the rationale.
+      - name: Install core library (structured-address-fix, unpinned)
+        run: pip install "structured-address-fix @ git+https://github.com/sebastienrousseau/structured-address-fix.git"
+
+      - name: Install lint tools (hash-pinned)
+        run: pip install --require-hashes -r requirements/lint.txt
+
+      - name: Ruff check
+        run: ruff check structured_address_fix_mcp/
+
+      - name: Black check
+        run: black --check structured_address_fix_mcp/ tests/
+
+      - name: Mypy
+        run: mypy structured_address_fix_mcp/
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - name: Install bandit (hash-pinned)
+        run: pip install --require-hashes -r requirements/security.txt
+      - name: Bandit
+        run: bandit -r structured_address_fix_mcp/ -ll

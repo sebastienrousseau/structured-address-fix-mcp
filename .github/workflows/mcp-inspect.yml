@@ -1,0 +1,38 @@
+name: MCP Protocol Conformance
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    name: MCP Inspector (tools/list)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "22"
+
+      # The core library this server wraps is not yet on PyPI, so ``pip
+      # install .`` cannot resolve it from the published index. Install it
+      # unpinned from source first; drop this step once the core ships.
+      - name: Install core library (structured-address-fix, unpinned)
+        run: pip install "structured-address-fix @ git+https://github.com/sebastienrousseau/structured-address-fix.git"
+
+      - name: Install structured-address-fix-mcp
+        run: pip install .
+
+      - name: List tools via MCP Inspector CLI
+        run: npx -y @modelcontextprotocol/inspector --cli structured-address-fix-mcp --method tools/list
