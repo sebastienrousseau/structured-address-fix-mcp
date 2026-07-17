@@ -1736,7 +1736,7 @@ files = [
 
 [[package]]
 name = "structured-address-fix"
-version = "0.1.0"
+version = "0.0.1"
 description = "ISO 20022 structured-address remediation and payment-rejection prevention for the November 2026 cliff."
 optional = false
 python-versions = ">=3.12,<4.0"
@@ -1838,4 +1838,4 @@ docs = ["jinja2", "sphinx", "sphinx_rtd_theme"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "280e5d2a90fc32f1e32f26d41e113b51afd9860d8af58701531f1adcf829184d"
+content-hash = "bd77fdefdf5a424d3d548a9b3f8b19c8c650f53ba17e25d5fc9544e94220062c"

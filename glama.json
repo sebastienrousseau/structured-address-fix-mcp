@@ -4,7 +4,7 @@
   "title": "structured-address-fix-mcp",
   "display_name": "Structured Address Fix MCP",
   "description": "Model Context Protocol server for the structured-address-fix ISO 20022 postal-address library. Exposes 9 tools over stdio for the 14 November 2026 CBPR+/HVPS+/T2/CHAPS/Fedwire cliff, when fully unstructured addresses are rejected across the major schemes: address-policy discovery (list_policies), structured/hybrid/unstructured classification (classify_address), single-address and whole-message assessment against a policy (assess_address, assess_message), explained remediation with before/after addresses and confidence-scored patch operations (remediate_address, remediate_message), a dry-run patch preview (preview_patch), finding-code explanation with resolution guidance (explain_finding), and the binding November 2026 cutover date (get_cutover_date). All tools are thin typed wrappers over the shared structured_address_fix.services facade, so the MCP surface behaves identically to the CLI. SLSA Build L3 provenance + PEP 740 sigstore attestations + CycloneDX/SPDX/licenses SBOMs on every release; NIST SP 800-218 SSDF practice IDs mapped in SECURITY.md.",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "repository": "https://github.com/sebastienrousseau/structured-address-fix-mcp",
   "homepage": "https://sebastienrousseau.github.io/structured-address-fix/",
   "license": "Apache-2.0",

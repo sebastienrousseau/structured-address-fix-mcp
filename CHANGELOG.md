@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2026-07-17
+## [0.0.1] - 2026-07-17
 
 Initial release: the Model Context Protocol (MCP) server for
 [`structured-address-fix`](https://github.com/sebastienrousseau/structured-address-fix),
@@ -52,4 +52,4 @@ addresses are rejected across CBPR+, HVPS+, T2, CHAPS, and Fedwire.
   SBOMs on every GitHub release; NIST SP 800-218 SSDF practice mapping
   in `SECURITY.md`; MCP registry + Glama directory manifests.
 
-[0.1.0]: https://github.com/sebastienrousseau/structured-address-fix-mcp/releases/tag/v0.1.0
+[0.0.1]: https://github.com/sebastienrousseau/structured-address-fix-mcp/releases/tag/v0.0.1

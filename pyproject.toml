@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "structured-address-fix-mcp"
-version = "0.1.0"
+version = "0.0.1"
 description = "Model Context Protocol (MCP) server exposing the structured-address-fix ISO 20022 address-remediation library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0"
@@ -20,7 +20,7 @@ python = ">=3.12,<4.0"
 # The reusable core this server is a thin transport over. Pinned to a
 # published range for release; installed from the sibling checkout during
 # local development (see the [tool.poetry.group.dev] path dependency).
-structured-address-fix = ">=0.1,<1"
+structured-address-fix = ">=0.0.1,<1"
 mcp = ">=1.28.1"
 
 [tool.poetry.group.dev.dependencies]
