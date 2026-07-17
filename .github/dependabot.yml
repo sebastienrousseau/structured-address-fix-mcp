@@ -23,7 +23,7 @@ updates:
 
   # ClusterFuzzLite base image (keeps the digest-pinned Dockerfile current).
   - package-ecosystem: "docker"
-    directory: "/.clusterfuzzlite"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
