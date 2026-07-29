@@ -21,7 +21,7 @@ python = ">=3.12,<4.0"
 # published range for release; installed from the sibling checkout during
 # local development (see the [tool.poetry.group.dev] path dependency).
 structured-address-fix = ">=0.0.1,<1"
-mcp = ">=1.28.1"
+mcp = ">=1.28.1,<2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=9.0.3,<10.0.0"
