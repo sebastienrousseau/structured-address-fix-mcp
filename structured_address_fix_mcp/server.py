@@ -49,6 +49,7 @@ transport).
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import unicodedata
 from datetime import date
@@ -62,6 +63,10 @@ from structured_address_fix.config import NOV_2026_CLIFF
 from structured_address_fix.domain.address import CanonicalAddress
 from structured_address_fix.domain.findings import FindingCode
 from structured_address_fix.errors import StructuredAddressError
+from structured_address_fix.services.facade import (
+    PolicyInfo,
+    default_registry,
+)
 
 from structured_address_fix_mcp import __version__
 from structured_address_fix_mcp.explanations import FINDING_EXPLANATIONS
@@ -628,6 +633,115 @@ def validate_postal_policy(
             f"({description})"
         )
     return {"is_compliant": not errors, "policy_errors": errors}
+
+
+# Prompts
+# ---------------------------------------------------------------------------
+
+#: The default policy the tools assume when none is supplied. Mirrors the
+#: ``_PolicyId`` field description and the core's own default.
+_DEFAULT_POLICY = "cbpr-2026"
+
+
+@server.prompt(title="Review an address remediation")
+def review_address_remediation(
+    policy_id: Annotated[
+        str,
+        Field(
+            description=(
+                "The policy whose rulebook frames the review (see "
+                "list_policies). Defaults to 'cbpr-2026'."
+            )
+        ),
+    ] = _DEFAULT_POLICY,
+) -> str:
+    """Guide an agent through reviewing a postal-address remediation.
+
+    Teaches the end-to-end tool workflow -- classify, assess, remediate,
+    then preview the patch -- and stresses hand-checking low-confidence
+    fixes before they are accepted.
+
+    Args:
+        policy_id: The policy to frame the review against (defaults to
+            cbpr-2026).
+    """
+    if policy_id == _DEFAULT_POLICY:
+        policy_note = (
+            f"Work against the default policy '{policy_id}' -- the SWIFT "
+            "CBPR+ UG2026 rulebook that sets the 14 November 2026 cliff."
+        )
+    else:
+        policy_note = (
+            f"Work against policy '{policy_id}'. Confirm it exists with "
+            "list_policies before you rely on it."
+        )
+    return (
+        "You are reviewing an ISO 20022 postal-address remediation.\n\n"
+        f"{policy_note}\n\n"
+        "Follow this workflow:\n"
+        "1. classify_address -- check the shape of the address "
+        "(structured, hybrid, or unstructured) to decide whether "
+        "remediation is even needed.\n"
+        "2. assess_address (a single address) or assess_message (every "
+        "addressed party in a pacs.008 / pain.001 document) -- score it "
+        "against the policy and read the findings.\n"
+        "3. remediate_address or remediate_message -- propose the "
+        "compliant form, with each patch operation carrying the finding "
+        "it resolves, the source token, and a confidence score.\n"
+        "4. preview_patch -- dry-run the operations on the message before "
+        "anything is applied.\n\n"
+        "Scrutinise every low-confidence patch operation: verify each fix "
+        "whose confidence is not high by hand against the source address "
+        "before accepting it, and use explain_finding for any finding "
+        "code you do not recognise."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Resources
+# ---------------------------------------------------------------------------
+
+
+@server.resource(
+    "saf://policies",
+    title="Address policies",
+    mime_type="application/json",
+)
+def policies_resource() -> str:
+    """The catalog of address policies as JSON (mirrors list_policies)."""
+    return json.dumps([_dump(p) for p in services.list_policies()])
+
+
+@server.resource(
+    "saf://cutover-date",
+    title="ISO 20022 cutover date",
+    mime_type="application/json",
+)
+def cutover_date_resource() -> str:
+    """The binding cutover date as JSON (mirrors get_cutover_date)."""
+    return json.dumps(get_cutover_date())
+
+
+@server.resource(
+    "saf://policy/{policy_id}",
+    title="Address policy",
+    mime_type="application/json",
+)
+def policy_resource(policy_id: str) -> str:
+    """A single address policy by id as JSON, or an ``{"error": ...}``.
+
+    Looks the policy up in the core registry; an unknown id is caught and
+    returned as an error payload rather than raised.
+
+    Args:
+        policy_id: The id of the policy to look up (see saf://policies).
+    """
+    try:
+        policy = default_registry.get(policy_id)
+    except _HANDLED as exc:
+        return json.dumps({"error": str(exc)})
+    info = PolicyInfo(id=policy.id, title=policy.title, tier=policy.tier)
+    return json.dumps(_dump(info))
 
 
 def _build_parser() -> argparse.ArgumentParser:
