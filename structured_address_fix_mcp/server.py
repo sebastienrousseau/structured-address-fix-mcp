@@ -49,6 +49,8 @@ transport).
 from __future__ import annotations
 
 import argparse
+import re
+import unicodedata
 from datetime import date
 from typing import Annotated, Any
 
@@ -348,6 +350,284 @@ def get_cutover_date() -> dict[str, Any]:
         "date": NOV_2026_CLIFF.isoformat(),
         "scheme": "SWIFT CBPR+ UG2026",
     }
+
+
+# ---------------------------------------------------------------------------
+# Bundled reference data for the address-splitter tools (Cap 54-56).
+#
+# These tools compute purely over their arguments and a table shipped inside
+# this module -- no new runtime dependency (no pycountry), no network, no
+# filesystem. Kept local so the offline, side-effect-free contract of every
+# tool here holds.
+# ---------------------------------------------------------------------------
+
+
+def _normalize_key(value: str) -> str:
+    """Fold a country string to a lookup key.
+
+    Strips diacritics (so ``España`` matches ``Espana``), lowercases,
+    drops periods (so ``U.S.A.`` matches ``USA``), and collapses runs of
+    whitespace to single spaces.
+    """
+    decomposed = unicodedata.normalize("NFKD", value)
+    without_accents = "".join(
+        ch for ch in decomposed if not unicodedata.combining(ch)
+    )
+    return " ".join(without_accents.lower().replace(".", "").split())
+
+
+# ISO 3166-1 alpha-2 code -> the names, aliases, and alpha-3 code that
+# should resolve to it. Covers the major markets with common
+# local-language endonyms (Deutschland, España, Nippon, ...) and everyday
+# aliases (UK, USA, Holland, UAE). Not exhaustive of all 249 codes by
+# design -- a bundled, dependency-free table for the addresses these tools
+# actually see.
+_COUNTRY_NAMES: dict[str, tuple[str, ...]] = {
+    "US": ("usa", "united states", "united states of america", "america"),
+    "CA": ("can", "canada"),
+    "MX": ("mex", "mexico"),
+    "GB": (
+        "gbr",
+        "united kingdom",
+        "uk",
+        "great britain",
+        "britain",
+        "england",
+        "scotland",
+        "wales",
+        "northern ireland",
+    ),
+    "IE": ("irl", "ireland", "eire"),
+    "FR": ("fra", "france"),
+    "DE": ("deu", "germany", "deutschland"),
+    "ES": ("esp", "spain", "espana"),
+    "PT": ("prt", "portugal"),
+    "IT": ("ita", "italy", "italia"),
+    "NL": ("nld", "netherlands", "nederland", "holland", "the netherlands"),
+    "BE": ("bel", "belgium", "belgique", "belgie"),
+    "LU": ("lux", "luxembourg"),
+    "CH": ("che", "switzerland", "schweiz", "suisse", "svizzera"),
+    "AT": ("aut", "austria", "osterreich"),
+    "DK": ("dnk", "denmark", "danmark"),
+    "SE": ("swe", "sweden", "sverige"),
+    "NO": ("nor", "norway", "norge"),
+    "FI": ("fin", "finland", "suomi"),
+    "IS": ("isl", "iceland", "island"),
+    "PL": ("pol", "poland", "polska"),
+    "CZ": ("cze", "czechia", "czech republic", "cesko"),
+    "SK": ("svk", "slovakia", "slovensko"),
+    "HU": ("hun", "hungary", "magyarorszag"),
+    "RO": ("rou", "romania", "romania"),
+    "GR": ("grc", "greece", "hellas", "ellada"),
+    "HR": ("hrv", "croatia", "hrvatska"),
+    "RU": ("rus", "russia", "russian federation"),
+    "UA": ("ukr", "ukraine"),
+    "TR": ("tur", "turkey", "turkiye"),
+    "JP": ("jpn", "japan", "nippon", "nihon"),
+    "CN": ("chn", "china", "prc", "peoples republic of china"),
+    "HK": ("hkg", "hong kong"),
+    "TW": ("twn", "taiwan"),
+    "KR": ("kor", "south korea", "korea", "republic of korea"),
+    "IN": ("ind", "india", "bharat"),
+    "ID": ("idn", "indonesia"),
+    "SG": ("sgp", "singapore"),
+    "MY": ("mys", "malaysia"),
+    "TH": ("tha", "thailand"),
+    "VN": ("vnm", "vietnam", "viet nam"),
+    "PH": ("phl", "philippines"),
+    "AU": ("aus", "australia"),
+    "NZ": ("nzl", "new zealand"),
+    "BR": ("bra", "brazil", "brasil"),
+    "AR": ("arg", "argentina"),
+    "CL": ("chl", "chile"),
+    "CO": ("col", "colombia"),
+    "ZA": ("zaf", "south africa"),
+    "NG": ("nga", "nigeria"),
+    "EG": ("egy", "egypt"),
+    "MA": ("mar", "morocco", "maroc"),
+    "IL": ("isr", "israel"),
+    "SA": ("sau", "saudi arabia"),
+    "AE": ("are", "united arab emirates", "uae", "emirates"),
+    "QA": ("qat", "qatar"),
+}
+
+# Flattened lookup: every alias (and the alpha-2 code itself) normalised to
+# its alpha-2 code. Built once at import.
+_COUNTRY_LOOKUP: dict[str, str] = {}
+for _code, _aliases in _COUNTRY_NAMES.items():
+    _COUNTRY_LOOKUP[_normalize_key(_code)] = _code
+    for _alias in _aliases:
+        _COUNTRY_LOOKUP[_normalize_key(_alias)] = _code
+
+
+# A building number: a run of digits, an optional range (10-12, 10/12) and
+# an optional trailing letter (221B).
+_BUILDING = r"\d+(?:[-/]\d+)?[A-Za-z]?"
+# Leading number: "10 Downing Street" (US/UK convention).
+_LEADING_NUM = re.compile(rf"^(?P<num>{_BUILDING})\s+(?P<rest>.+?)$")
+# Trailing number: "Rue de Rivoli 12" (much of continental Europe).
+_TRAILING_NUM = re.compile(rf"^(?P<rest>.+?)\s+(?P<num>{_BUILDING})$")
+# Sub-building marker: "Flat 2", "Apt 3B", "Suite 400", "Unit 5", "#7".
+_SUB_BUILDING = re.compile(
+    r"\b(?:flat|apartment|apt|unit|suite|room|floor|building|bldg)\b\.?"
+    r"\s*#?\s*(?:[0-9]+[a-z]?|[a-z])\b",
+    re.IGNORECASE,
+)
+
+# Country-specific post_code format rules: alpha-2 -> (pattern, human
+# description). US ZIP (5 or 5+4), UK alphanumeric, DE/FR 5-digit, JP
+# 3-then-4-digit.
+_POSTAL_RULES: dict[str, tuple[re.Pattern[str], str]] = {
+    "US": (
+        re.compile(r"^\d{5}(?:-\d{4})?$"),
+        "5 digits or ZIP+4, e.g. 90210 or 90210-1234",
+    ),
+    "GB": (
+        re.compile(r"^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$", re.IGNORECASE),
+        "UK postcode, e.g. SW1A 2AA",
+    ),
+    "DE": (re.compile(r"^\d{5}$"), "5 digits, e.g. 10115"),
+    "FR": (re.compile(r"^\d{5}$"), "5 digits, e.g. 75001"),
+    "JP": (
+        re.compile(r"^\d{3}-?\d{4}$"),
+        "3 then 4 digits, e.g. 100-0001",
+    ),
+}
+
+
+@server.tool(title="Normalize a country code", annotations=_PURE_READ)
+def normalize_country_code(
+    country_name_or_code: Annotated[
+        str,
+        Field(
+            description=(
+                "A country name, endonym, alias, or 2/3-letter code, e.g. "
+                "'Deutschland', 'UK', 'U.S.A.', 'DEU'."
+            )
+        ),
+    ],
+) -> dict[str, Any]:
+    """Resolve a country name or code to its ISO 3166-1 alpha-2 code.
+
+    Accepts English names, common local-language endonyms (Deutschland,
+    España, Nippon), everyday aliases (UK, USA, Holland, UAE), and existing
+    2- or 3-letter codes. Matching is case-, accent-, and punctuation-
+    insensitive.
+
+    Args:
+        country_name_or_code: The country name, alias, or code to resolve.
+
+    Returns a ``{"country_code": "DE"}`` object, or ``{"error": ...}`` when
+    the input matches no known country.
+    """
+    code = _COUNTRY_LOOKUP.get(_normalize_key(country_name_or_code))
+    if code is None:
+        return {"error": f"unknown country: {country_name_or_code!r}"}
+    return {"country_code": code}
+
+
+@server.tool(title="Split street and building", annotations=_PURE_READ)
+def split_street_and_building(
+    street_line: Annotated[
+        str,
+        Field(
+            description=(
+                "A single free-text street line, e.g. '10 Downing Street', "
+                "'Rue de Rivoli 12', or 'Flat 2, 221B Baker Street'."
+            )
+        ),
+    ],
+) -> dict[str, Any]:
+    """Split a street line into street name, building, and sub-building.
+
+    Handles the leading-number convention (US/UK: ``10 Downing Street``),
+    the trailing-number convention (much of continental Europe: ``Rue de
+    Rivoli 12``), and an optional sub-building marker (``Flat 2``, ``Apt
+    3B``, ``Suite 400``). When no building number is present the whole line
+    is returned as ``street_name`` (never an error).
+
+    Args:
+        street_line: The free-text street line to split.
+
+    Returns ``{"street_name", "building_number", "sub_building"}`` with
+    ``building_number`` / ``sub_building`` set to ``null`` when absent.
+    """
+    line = street_line.strip()
+
+    sub_building: str | None = None
+    sub_match = _SUB_BUILDING.search(line)
+    if sub_match is not None:
+        sub_building = sub_match.group(0).strip()
+        line = (line[: sub_match.start()] + line[sub_match.end() :]).strip()
+        line = line.strip(",").strip()
+
+    building_number: str | None = None
+    leading = _LEADING_NUM.match(line)
+    trailing = _TRAILING_NUM.match(line)
+    if leading is not None:
+        building_number = leading.group("num")
+        street_name = leading.group("rest").strip()
+    elif trailing is not None:
+        building_number = trailing.group("num")
+        street_name = trailing.group("rest").strip()
+    else:
+        street_name = line
+
+    return {
+        "street_name": street_name,
+        "building_number": building_number,
+        "sub_building": sub_building,
+    }
+
+
+@server.tool(title="Validate a postal-code policy", annotations=_PURE_READ)
+def validate_postal_policy(
+    address: _AddressInput,
+    country_code: Annotated[
+        str,
+        Field(
+            description=(
+                "The ISO 3166-1 alpha-2 code whose post_code policy to "
+                "apply (US, GB, DE, FR, JP)."
+            )
+        ),
+    ],
+) -> dict[str, Any]:
+    """Validate an address's post_code against a country's format policy.
+
+    Supported policies: US (5-digit ZIP or ZIP+4), GB (alphanumeric UK
+    postcode), DE and FR (5 digits), JP (3-then-4 digits). The address is a
+    canonical-field JSON object; only its ``post_code`` is inspected.
+
+    Args:
+        address: The structured address whose post_code to validate.
+        country_code: The alpha-2 code selecting the policy.
+
+    Returns ``{"is_compliant": bool, "policy_errors": [...]}``. An unknown
+    country or a missing post_code is reported as non-compliant with a
+    descriptive error rather than raising.
+    """
+    code = country_code.strip().upper()
+    rule = _POSTAL_RULES.get(code)
+    if rule is None:
+        return {
+            "is_compliant": False,
+            "policy_errors": [
+                f"no postal policy defined for country {code!r}"
+            ],
+        }
+
+    pattern, description = rule
+    post_code = str(address.get("post_code") or "").strip()
+    errors: list[str] = []
+    if not post_code:
+        errors.append("missing post_code")
+    elif pattern.match(post_code) is None:
+        errors.append(
+            f"post_code {post_code!r} does not match the {code} policy "
+            f"({description})"
+        )
+    return {"is_compliant": not errors, "policy_errors": errors}
 
 
 def _build_parser() -> argparse.ArgumentParser:

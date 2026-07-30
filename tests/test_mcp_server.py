@@ -42,6 +42,9 @@ EXPECTED_TOOLS = {
     "preview_patch",
     "explain_finding",
     "get_cutover_date",
+    "normalize_country_code",
+    "split_street_and_building",
+    "validate_postal_policy",
 }
 
 # A malformed address: a three-letter country breaks the alpha-2 rule, so
@@ -62,7 +65,7 @@ def test_server_and_main_are_well_formed():
 
 @pytest.mark.asyncio
 async def test_all_tools_registered():
-    """Every one of the nine tools is registered on the server."""
+    """Every one of the twelve tools is registered on the server."""
     tools = await server.server.list_tools()
     assert {tool.name for tool in tools} == EXPECTED_TOOLS
 
@@ -330,3 +333,145 @@ def test_get_cutover_date():
         "date": "2026-11-14",
         "scheme": "SWIFT CBPR+ UG2026",
     }
+
+
+# ---------------------------------------------------------------------------
+# normalize_country_code
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_country_code_local_name():
+    """A local-language endonym resolves to its alpha-2 code."""
+    assert server.normalize_country_code("Deutschland") == {
+        "country_code": "DE"
+    }
+
+
+def test_normalize_country_code_alias():
+    """The everyday alias 'UK' resolves to the ISO code 'GB'."""
+    assert server.normalize_country_code("UK") == {"country_code": "GB"}
+
+
+def test_normalize_country_code_existing_alpha2():
+    """An existing alpha-2 code passes through unchanged."""
+    assert server.normalize_country_code("US") == {"country_code": "US"}
+
+
+def test_normalize_country_code_alpha3():
+    """A 3-letter code resolves to its alpha-2 code."""
+    assert server.normalize_country_code("DEU") == {"country_code": "DE"}
+
+
+def test_normalize_country_code_accent_and_punctuation_insensitive():
+    """Matching ignores accents and punctuation ('España', 'U.S.A.')."""
+    assert server.normalize_country_code("España") == {"country_code": "ES"}
+    assert server.normalize_country_code("U.S.A.") == {"country_code": "US"}
+
+
+def test_normalize_country_code_unknown_returns_error():
+    """An unknown country yields an ``{"error": ...}`` dict."""
+    result = server.normalize_country_code("Atlantis")
+    assert result == {"error": "unknown country: 'Atlantis'"}
+
+
+# ---------------------------------------------------------------------------
+# split_street_and_building
+# ---------------------------------------------------------------------------
+
+
+def test_split_leading_number():
+    """A leading number is the building; the rest is the street."""
+    assert server.split_street_and_building("10 Downing Street") == {
+        "street_name": "Downing Street",
+        "building_number": "10",
+        "sub_building": None,
+    }
+
+
+def test_split_trailing_number():
+    """A trailing number (continental convention) is the building."""
+    assert server.split_street_and_building("Rue de Rivoli 12") == {
+        "street_name": "Rue de Rivoli",
+        "building_number": "12",
+        "sub_building": None,
+    }
+
+
+def test_split_no_number_returns_whole_line():
+    """With no number the whole line is the street name (no error)."""
+    assert server.split_street_and_building("Downing Street") == {
+        "street_name": "Downing Street",
+        "building_number": None,
+        "sub_building": None,
+    }
+
+
+def test_split_with_sub_building():
+    """A sub-building marker is extracted alongside the building number."""
+    assert server.split_street_and_building("Flat 2, 221B Baker Street") == {
+        "street_name": "Baker Street",
+        "building_number": "221B",
+        "sub_building": "Flat 2",
+    }
+
+
+# ---------------------------------------------------------------------------
+# validate_postal_policy
+# ---------------------------------------------------------------------------
+
+
+def test_validate_postal_policy_us_invalid():
+    """A non-numeric US post_code is non-compliant with an error."""
+    result = server.validate_postal_policy({"post_code": "ABCDE"}, "US")
+    assert result["is_compliant"] is False
+    assert result["policy_errors"]
+
+
+def test_validate_postal_policy_us_valid():
+    """A valid 5-digit US ZIP is compliant with no errors."""
+    assert server.validate_postal_policy({"post_code": "90210"}, "US") == {
+        "is_compliant": True,
+        "policy_errors": [],
+    }
+
+
+def test_validate_postal_policy_us_zip_plus_four():
+    """A ZIP+4 US post_code is compliant."""
+    result = server.validate_postal_policy({"post_code": "90210-1234"}, "US")
+    assert result["is_compliant"] is True
+
+
+def test_validate_postal_policy_uk_valid():
+    """A valid UK postcode is compliant."""
+    result = server.validate_postal_policy({"post_code": "SW1A 2AA"}, "GB")
+    assert result["is_compliant"] is True
+
+
+def test_validate_postal_policy_de_valid():
+    """A valid 5-digit German post_code is compliant."""
+    result = server.validate_postal_policy({"post_code": "10115"}, "DE")
+    assert result["is_compliant"] is True
+
+
+def test_validate_postal_policy_jp_valid():
+    """A valid Japanese post_code (NNN-NNNN) is compliant."""
+    result = server.validate_postal_policy({"post_code": "100-0001"}, "JP")
+    assert result["is_compliant"] is True
+
+
+def test_validate_postal_policy_missing_post_code():
+    """A missing post_code is non-compliant with a 'missing' error."""
+    result = server.validate_postal_policy({}, "US")
+    assert result == {
+        "is_compliant": False,
+        "policy_errors": ["missing post_code"],
+    }
+
+
+def test_validate_postal_policy_unknown_country():
+    """A country with no policy is reported as non-compliant."""
+    result = server.validate_postal_policy({"post_code": "12345"}, "ZZ")
+    assert result["is_compliant"] is False
+    assert result["policy_errors"] == [
+        "no postal policy defined for country 'ZZ'"
+    ]
