@@ -15,6 +15,8 @@
 
 """Tests for the structured-address-fix MCP server tools."""
 
+import sys
+import types
 from datetime import date
 
 import pytest
@@ -45,6 +47,7 @@ EXPECTED_TOOLS = {
     "normalize_country_code",
     "split_street_and_building",
     "validate_postal_policy",
+    "parse_address_libpostal",
 }
 
 # A malformed address: a three-letter country breaks the alpha-2 rule, so
@@ -65,7 +68,7 @@ def test_server_and_main_are_well_formed():
 
 @pytest.mark.asyncio
 async def test_all_tools_registered():
-    """Every one of the twelve tools is registered on the server."""
+    """Every one of the registered tools matches the expected set."""
     tools = await server.server.list_tools()
     assert {tool.name for tool in tools} == EXPECTED_TOOLS
 
@@ -475,3 +478,155 @@ def test_validate_postal_policy_unknown_country():
     assert result["policy_errors"] == [
         "no postal policy defined for country 'ZZ'"
     ]
+
+
+# ---------------------------------------------------------------------------
+# parse_address_libpostal
+#
+# libpostal (the ``postal`` binding + system C library) is not installed in
+# CI/dev, so the tool's real runtime behaviour here is the regex fallback.
+# The libpostal path is exercised by injecting a fake ``postal.parser``
+# module -- it is mock-verified only, never run against real libpostal.
+# ---------------------------------------------------------------------------
+
+
+def _install_fake_postal(monkeypatch, components):
+    """Inject a fake ``postal.parser`` whose parser returns ``components``.
+
+    ``parse_address`` records the ``country`` kwarg it was called with so
+    tests can assert the hint is threaded through.
+    """
+    calls: dict[str, object] = {}
+
+    def fake_parse_address(address, country=None):
+        calls["address"] = address
+        calls["country"] = country
+        return list(components)
+
+    parser_mod = types.ModuleType("postal.parser")
+    parser_mod.parse_address = fake_parse_address
+    postal_pkg = types.ModuleType("postal")
+    monkeypatch.setitem(sys.modules, "postal", postal_pkg)
+    monkeypatch.setitem(sys.modules, "postal.parser", parser_mod)
+    return calls
+
+
+def test_parse_address_libpostal_reports_fallback_when_absent():
+    """With ``postal`` uninstalled the tool degrades to the regex path."""
+    result = server.parse_address_libpostal(
+        "75001 12 Rue de Rivoli Paris France"
+    )
+    assert result["parser"] == "fallback"
+    assert result["address"] == {
+        "StrtNm": "Rue de Rivoli",
+        "BldgNb": "12",
+        "PstCd": "75001",
+        "TwnNm": "Paris",
+        "Ctry": "FR",
+    }
+
+
+def test_parse_address_libpostal_fallback_country_hint():
+    """The hint supplies the country and drives a two-word UK postcode."""
+    result = server.parse_address_libpostal(
+        "10 Downing St SW1A 2AA London", country_hint="GB"
+    )
+    assert result["parser"] == "fallback"
+    assert result["address"] == {
+        "StrtNm": "Downing St",
+        "BldgNb": "10",
+        "PstCd": "SW1A 2AA",
+        "TwnNm": "London",
+        "Ctry": "GB",
+    }
+
+
+def test_parse_address_libpostal_fallback_no_postcode():
+    """A country with a rule but no postcode present yields PstCd None."""
+    result = server.parse_address_libpostal("Rue de Rivoli Paris France")
+    assert result["address"] == {
+        "StrtNm": "Rue de Rivoli",
+        "BldgNb": None,
+        "PstCd": None,
+        "TwnNm": "Paris",
+        "Ctry": "FR",
+    }
+
+
+def test_parse_address_libpostal_fallback_country_only():
+    """A bare country resolves Ctry and leaves the other fields None."""
+    result = server.parse_address_libpostal("Singapore")
+    assert result["address"] == {
+        "StrtNm": None,
+        "BldgNb": None,
+        "PstCd": None,
+        "TwnNm": None,
+        "Ctry": "SG",
+    }
+
+
+def test_parse_address_libpostal_fallback_no_country_no_town():
+    """No country and a numeric last token: Ctry/PstCd/TwnNm stay None."""
+    result = server.parse_address_libpostal("Main Street 42")
+    assert result["address"] == {
+        "StrtNm": "Main Street",
+        "BldgNb": "42",
+        "PstCd": None,
+        "TwnNm": None,
+        "Ctry": None,
+    }
+
+
+def test_parse_address_libpostal_uses_libpostal_when_available(monkeypatch):
+    """When ``postal`` is importable the libpostal path maps its output."""
+    calls = _install_fake_postal(
+        monkeypatch,
+        [
+            ("12", "house_number"),
+            ("Rue de Rivoli", "road"),
+            ("75001", "postcode"),
+            ("paris", "city"),
+            ("france", "country"),
+            ("2", "level"),
+        ],
+    )
+    result = server.parse_address_libpostal(
+        "12 Rue de Rivoli, 75001 Paris, France"
+    )
+    assert result["parser"] == "libpostal"
+    assert result["address"] == {
+        "StrtNm": "Rue de Rivoli",
+        "BldgNb": "12",
+        "PstCd": "75001",
+        "TwnNm": "paris",
+        "Ctry": "FR",
+    }
+    assert calls["address"] == "12 Rue de Rivoli, 75001 Paris, France"
+    assert calls["country"] is None
+
+
+def test_parse_address_libpostal_country_hint_fills_country(monkeypatch):
+    """Absent a libpostal country component, the hint supplies Ctry."""
+    _install_fake_postal(
+        monkeypatch,
+        [("Musterstrasse", "road"), ("5", "house_number")],
+    )
+    result = server.parse_address_libpostal(
+        "Musterstrasse 5", country_hint="DE"
+    )
+    assert result["parser"] == "libpostal"
+    assert result["address"]["Ctry"] == "DE"
+    assert result["address"]["StrtNm"] == "Musterstrasse"
+    assert result["address"]["BldgNb"] == "5"
+
+
+def test_parse_address_libpostal_unresolvable_country(monkeypatch):
+    """An unknown libpostal country with no hint leaves Ctry None."""
+    _install_fake_postal(
+        monkeypatch,
+        [("Somewhere", "road"), ("Atlantis", "country")],
+    )
+    result = server.parse_address_libpostal("Somewhere, Atlantis")
+    assert result["parser"] == "libpostal"
+    assert result["address"]["Ctry"] is None
+    assert result["address"]["StrtNm"] == "Somewhere"

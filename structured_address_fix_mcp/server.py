@@ -635,6 +635,202 @@ def validate_postal_policy(
     return {"is_compliant": not errors, "policy_errors": errors}
 
 
+# ---------------------------------------------------------------------------
+# libpostal address parser (Cap 51).
+#
+# ``parse_address_libpostal`` parses a single free-text address into the ISO
+# 20022 postal fields. When the optional ``postal`` binding (pypostal, which
+# needs the system libpostal C library) is installed it uses libpostal's
+# statistical parser; otherwise it degrades gracefully to the repo's own
+# regex heuristics (the country lookup, per-country postal rules, and the
+# street/building splitter defined above). The result carries a ``parser``
+# field so callers know which path ran.
+# ---------------------------------------------------------------------------
+
+#: libpostal component label -> ISO 20022 element local name. libpostal
+#: emits ``country`` too; it is handled separately because it must be
+#: normalised to an alpha-2 code rather than copied verbatim.
+_LIBPOSTAL_TO_ISO: dict[str, str] = {
+    "road": "StrtNm",
+    "house_number": "BldgNb",
+    "postcode": "PstCd",
+    "city": "TwnNm",
+}
+
+#: The ISO 20022 postal fields these parsers populate, in a stable order.
+_ISO_ADDRESS_FIELDS = ("StrtNm", "BldgNb", "PstCd", "TwnNm", "Ctry")
+
+
+def _empty_iso_fields() -> dict[str, str | None]:
+    """Return the ISO 20022 postal fields all set to ``None``."""
+    return dict.fromkeys(_ISO_ADDRESS_FIELDS)
+
+
+def _strip_trailing_country(
+    words: list[str],
+) -> tuple[str | None, list[str]]:
+    """Peel a trailing country name/alias off a word list.
+
+    Tries the last three, two, then one word(s) against the bundled
+    country lookup so multi-word names (``United Arab Emirates``) match
+    before single-word ones. Returns the resolved alpha-2 code (or
+    ``None``) and the remaining words with the country removed.
+    """
+    for size in (3, 2, 1):
+        if len(words) >= size:
+            candidate = " ".join(words[-size:])
+            code = _COUNTRY_LOOKUP.get(_normalize_key(candidate))
+            if code is not None:
+                return code, words[:-size]
+    return None, words
+
+
+def _extract_postcode(
+    words: list[str], country: str | None
+) -> tuple[str | None, list[str]]:
+    """Pull a country-shaped post code out of a word list.
+
+    Uses the per-country ``_POSTAL_RULES`` pattern; tries adjacent
+    two-word chunks first (so ``SW1A 2AA`` is recovered whole) then single
+    words. Countries without a rule yield no post code. Returns the post
+    code (or ``None``) and the remaining words with it removed.
+    """
+    rule = _POSTAL_RULES.get(country or "")
+    if rule is None:
+        return None, words
+    pattern = rule[0]
+    for size in (2, 1):
+        for i in range(len(words) - size + 1):
+            chunk = " ".join(words[i : i + size])
+            if pattern.match(chunk):
+                return chunk, words[:i] + words[i + size :]
+    return None, words
+
+
+def _fallback_parse(
+    unstructured_address: str, country_hint: str | None
+) -> dict[str, str | None]:
+    """Parse an address into ISO 20022 fields with the regex heuristics.
+
+    The graceful-degradation path used when libpostal is unavailable. It
+    resolves the country (from ``country_hint`` or a trailing country
+    token), extracts a country-shaped post code, promotes a trailing
+    alphabetic word to the town, then reuses ``split_street_and_building``
+    for the street name and building number.
+    """
+    words = unstructured_address.split()
+    detected, words = _strip_trailing_country(words)
+
+    country: str | None = None
+    if country_hint:
+        country = _COUNTRY_LOOKUP.get(_normalize_key(country_hint))
+    if country is None:
+        country = detected
+
+    post_code, words = _extract_postcode(words, country)
+
+    town: str | None = None
+    if len(words) >= 2 and not any(ch.isdigit() for ch in words[-1]):
+        town = words[-1]
+        words = words[:-1]
+
+    street_line = " ".join(words).strip()
+    if street_line:
+        split = split_street_and_building(street_line)
+    else:
+        split = {"street_name": None, "building_number": None}
+
+    return {
+        "StrtNm": split["street_name"],
+        "BldgNb": split["building_number"],
+        "PstCd": post_code,
+        "TwnNm": town,
+        "Ctry": country,
+    }
+
+
+def _map_libpostal(
+    components: list[tuple[str, str]], country_hint: str | None
+) -> dict[str, str | None]:
+    """Map libpostal ``(value, label)`` components to ISO 20022 fields.
+
+    ``road`` / ``house_number`` / ``postcode`` / ``city`` map directly;
+    the ``country`` component is normalised to an ISO 3166-1 alpha-2 code
+    (falling back to ``country_hint``). Unrecognised labels are ignored.
+    """
+    fields = _empty_iso_fields()
+    country_raw: str | None = None
+    for value, label in components:
+        iso = _LIBPOSTAL_TO_ISO.get(label)
+        if iso is not None:
+            fields[iso] = value
+        elif label == "country":
+            country_raw = value
+
+    country: str | None = None
+    if country_raw is not None:
+        country = _COUNTRY_LOOKUP.get(_normalize_key(country_raw))
+    if country is None and country_hint:
+        country = _COUNTRY_LOOKUP.get(_normalize_key(country_hint))
+    fields["Ctry"] = country
+    return fields
+
+
+@server.tool(title="Parse an address with libpostal", annotations=_PURE_READ)
+def parse_address_libpostal(
+    unstructured_address: Annotated[
+        str,
+        Field(
+            description=(
+                "A single free-text postal address, e.g. "
+                "'12 Rue de Rivoli, 75001 Paris, France'."
+            )
+        ),
+    ],
+    country_hint: Annotated[
+        str | None,
+        Field(
+            default=None,
+            description=(
+                "An ISO 3166-1 alpha-2 hint (or country name) used when the "
+                "address text does not name its own country."
+            ),
+        ),
+    ] = None,
+) -> dict[str, Any]:
+    """Parse a free-text address into ISO 20022 postal fields.
+
+    Uses the optional libpostal statistical parser (the ``postal`` binding,
+    which requires the system libpostal C library) when it is installed,
+    and otherwise degrades to this repo's own regex heuristics. Either way
+    the address is mapped to ``StrtNm``, ``BldgNb``, ``PstCd``, ``TwnNm``
+    and ``Ctry``. The result's ``parser`` field is ``"libpostal"`` or
+    ``"fallback"`` so callers know which path ran. Runs purely on CPU with
+    no network or filesystem access, though the libpostal path depends on
+    an external C library.
+
+    Args:
+        unstructured_address: The free-text address to parse.
+        country_hint: Country to assume when the text names none.
+
+    Returns ``{"parser": ..., "address": {StrtNm, BldgNb, PstCd, TwnNm,
+    Ctry}}``.
+    """
+    try:
+        from postal.parser import parse_address as _libpostal_parse
+    except ImportError:
+        return {
+            "parser": "fallback",
+            "address": _fallback_parse(unstructured_address, country_hint),
+        }
+
+    components = _libpostal_parse(unstructured_address, country=country_hint)
+    return {
+        "parser": "libpostal",
+        "address": _map_libpostal(list(components), country_hint),
+    }
+
+
 # Prompts
 # ---------------------------------------------------------------------------
 
