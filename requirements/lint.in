@@ -7,6 +7,6 @@
 # uv recompiles.
 structured-address-fix>=0.0.1,<1
 mcp>=1.28.1
-ruff==0.15.22
+ruff==0.16.1
 black==26.5.1
 mypy>=1.11,<3.0
