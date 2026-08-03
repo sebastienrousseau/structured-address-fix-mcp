@@ -21,7 +21,7 @@ python = ">=3.12,<4.0"
 # published range for release; installed from the sibling checkout during
 # local development (see the [tool.poetry.group.dev] path dependency).
 structured-address-fix = ">=0.0.1,<1"
-mcp = ">=1.28.1,<2"
+mcp = ">=1.28.1,<3"
 # Optional: the pypostal binding for the libpostal statistical address
 # parser used by ``parse_address_libpostal``. Requires the system
 # libpostal C library (and its ~2GB data) to be installed separately; the
