@@ -42,7 +42,7 @@ Launching the server:
           }
         }
 
-The server communicates over stdio by default (FastMCP's default
+The server communicates over stdio by default (MCPServer's default
 transport).
 """
 
@@ -55,7 +55,6 @@ import unicodedata
 from datetime import date
 from typing import Annotated, Any
 
-from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field, ValidationError
 from structured_address_fix import services
@@ -69,19 +68,23 @@ from structured_address_fix.services.facade import (
 )
 
 from structured_address_fix_mcp import __version__
+from structured_address_fix_mcp._mcp_compat import build_server
 from structured_address_fix_mcp.explanations import FINDING_EXPLANATIONS
 
-server = FastMCP("structured-address-fix")
-# FastMCP does not expose a version kwarg; without this override the MCP
-# SDK's own version leaks into serverInfo.version, breaking manifest /
-# runtime coherence checks (e.g. Glama scoring).
-server._mcp_server.version = __version__
+server = build_server("structured-address-fix", __version__)
 
 # Every tool here is a pure, side-effect-free reader: it computes solely
 # over its arguments (an address object, an XML string, a policy id) or
 # over data bundled with the core, writes nothing, and touches neither the
 # filesystem nor the network.
-_PURE_READ = ToolAnnotations(
+# The camelCase spellings are deliberate and must not be "fixed" to
+# snake_case. mcp 1.x names these fields `readOnlyHint` etc.; mcp 2.x
+# renamed them to `read_only_hint` and kept the camelCase spellings as
+# aliases. So camelCase is the only form that works on both majors —
+# passing snake_case to 1.x silently lands in an extra attribute and
+# leaves the real field None, dropping the annotation without error.
+# mypy resolves against 2.x, where the alias is invisible to it.
+_PURE_READ = ToolAnnotations(  # type: ignore[call-arg]
     readOnlyHint=True,
     destructiveHint=False,
     idempotentHint=True,
@@ -961,7 +964,7 @@ def _build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     """Run the MCP server over stdio.
 
-    Parses arguments (currently only ``--version``) and starts the FastMCP
+    Parses arguments (currently only ``--version``) and starts the MCPServer
     stdio transport, which an MCP client launches as a subprocess.
     """
     _build_parser().parse_args(argv)

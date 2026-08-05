@@ -23,7 +23,6 @@ import pytest
 
 pytest.importorskip("mcp")
 
-from mcp.server.fastmcp import FastMCP  # noqa: E402
 from pydantic import ValidationError  # noqa: E402
 from structured_address_fix.domain.address import (  # noqa: E402
     CanonicalAddress,
@@ -33,6 +32,7 @@ from structured_address_fix.errors import (  # noqa: E402
 )
 
 import structured_address_fix_mcp.server as server  # noqa: E402
+from structured_address_fix_mcp._mcp_compat import MCPServer  # noqa: E402
 
 EXPECTED_TOOLS = {
     "list_policies",
@@ -61,8 +61,8 @@ BAD_ADDRESS = {"country": "GBR"}
 
 
 def test_server_and_main_are_well_formed():
-    """The module exposes a FastMCP server and a callable ``main``."""
-    assert isinstance(server.server, FastMCP)
+    """The module exposes a MCPServer server and a callable ``main``."""
+    assert isinstance(server.server, MCPServer)
     assert callable(server.main)
 
 

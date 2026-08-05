@@ -86,7 +86,11 @@ from structured_address_fix_mcp import server
 
 async def main() -> None:
     result = await server.server.call_tool("get_cutover_date", {})
-    content = result[0] if isinstance(result, tuple) else result
+    # mcp 2.x returns a CallToolResult (read .content); 1.x
+    # returns the content list, or a (content, meta) tuple.
+    content = getattr(result, "content", None)
+    if content is None:
+        content = result[0] if isinstance(result, tuple) else result
     print(content[0].text)  # -> {"date": "2026-11-14", "scheme": "SWIFT CBPR+ UG2026"}
 
 

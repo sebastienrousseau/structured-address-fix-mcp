@@ -43,8 +43,7 @@ def main() -> None:
     print(f"is_compliant     : {report['is_compliant']}")
     for finding in report["findings"]:
         print(
-            f"  {finding['code']}  {finding['location']}  "
-            f"{finding['message']}"
+            f"  {finding['code']}  {finding['location']}  {finding['message']}"
         )
 
 
