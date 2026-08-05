@@ -32,7 +32,7 @@ def test_main_version_exits_zero_and_prints(capsys):
 
 
 def test_main_runs_server(monkeypatch):
-    """``main([])`` starts the FastMCP stdio loop via ``server.run``."""
+    """``main([])`` starts the MCPServer stdio loop via ``server.run``."""
     calls = []
     monkeypatch.setattr(
         server.server, "run", lambda *a, **k: calls.append((a, k))
