@@ -1363,6 +1363,21 @@ dev = ["pre-commit", "tox"]
 testing = ["coverage", "pytest", "pytest-benchmark"]
 
 [[package]]
+name = "postal"
+version = "1.1.11"
+description = "Python bindings to libpostal for fast international address parsing/normalization"
+optional = true
+python-versions = "*"
+groups = ["main"]
+markers = "extra == \"libpostal\""
+files = [
+    {file = "postal-1.1.11.tar.gz", hash = "sha256:2c1a5de42fcaf742c99b9f0230594b990f050ad7a7ab1223c1bc5e7db91200a6"},
+]
+
+[package.dependencies]
+six = "*"
+
+[[package]]
 name = "py"
 version = "1.11.0"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
@@ -2354,7 +2369,10 @@ codegen = ["jinja2"]
 dev = ["coverage", "flake8", "lxml", "lxml-stubs", "mypy", "psutil", "tox", "xmlschema[docs]"]
 docs = ["jinja2", "sphinx", "sphinx_rtd_theme"]
 
+[extras]
+libpostal = ["postal"]
+
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "8fc2e784322f6417be7a18b3fe92039fc4e7f6b2da6cabcd7c8b21c47fdfc93f"
+content-hash = "aa1cc6931b38b47a531b9a291df3d8fb5e09fdad809f9dfb4c58d133d978aae7"
