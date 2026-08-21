@@ -122,7 +122,12 @@ jobs:
       # unpinned from source first; drop this step once the core ships.
 
       - name: Install runtime dependencies
-        run: poetry install --no-interaction --only main
+        run: |
+          if ! poetry check --lock; then
+            echo "::error::poetry.lock is stale — run 'poetry lock', commit, and re-tag."
+            exit 1
+          fi
+          poetry install --no-interaction --only main
 
       - name: Install SBOM + license tooling (hash-pinned)
         run: pip install --require-hashes -r requirements/sbom.txt
