@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.3] - 2026-08-28
+
+`get_cutover_date` reported a date Swift had withdrawn.
+
+### Fixed
+
+- The tool whose one job is to report the binding structured-address date
+  returned `{"date": "2026-11-14", "scheme": "SWIFT CBPR+ UG2026"}`
+  unconditionally, as did the `saf://cutover-date` resource. Swift accepted a
+  community request on 27 August 2026 and deferred every payments change in
+  Standards Release 2026. An agent asking the binding date was handed a
+  withdrawn one, with Swift named as the authority.
+- `date` is `null` now. The withdrawn date is still returned as
+  `announced_date`, labelled, alongside `status`, `deferred_on`,
+  `replacement_timing` and the Swift announcement as `source`.
+  `requirement_stands` is true: the rule was agreed in 2023 and stands.
+- `applies_to` records that the deferral is Swift's and covers CBPR+.
+  Domestic market infrastructures set their own timing.
+
+### Changed
+
+- The `saf://cutover-date` resource test asserts against the tool rather than
+  a second copy of its payload, so the two cannot drift.
+- `structured-address-fix` floor raised to `>=0.0.3`, which introduced the
+  constants this server imports. The hash-pinned CI locks pinned `0.0.1` and
+  are regenerated.
+
 ## [0.0.2] - 2026-07-17
 
 ### Fixed
