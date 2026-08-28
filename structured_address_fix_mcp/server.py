@@ -375,7 +375,9 @@ def get_cutover_date() -> dict[str, Any]:
     they moved with Swift.
     """
     return {
-        "date": None if BINDING_CUTOVER is None else BINDING_CUTOVER.isoformat(),
+        "date": (
+            None if BINDING_CUTOVER is None else BINDING_CUTOVER.isoformat()
+        ),
         "status": "deferred" if BINDING_CUTOVER is None else "binding",
         "scheme": "SWIFT CBPR+ UG2026",
         "requirement_stands": True,
