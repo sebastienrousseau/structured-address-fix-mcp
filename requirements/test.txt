@@ -664,9 +664,9 @@ starlette==1.3.1 \
     # via
     #   mcp
     #   sse-starlette
-structured-address-fix==0.0.1 \
-    --hash=sha256:602b562892dfc622dc16864d2b73399e32e0b97701ce5d3ab3edd21e60dc81cb \
-    --hash=sha256:f65e0c7aa8e3b7bf16b9f15102f3ca82540879e38615312fd7302a7ff166fdc4
+structured-address-fix==0.0.3 \
+    --hash=sha256:0ab48e2d1cd087b22127f2c42371790e4353ee902b9486f11e26ecd4fe64373a \
+    --hash=sha256:8931fef4328763484e62bd4c8b050e816cfc3f3ddd298be2b67531b1304110cf
     # via -r requirements/test.in
 tabulate==0.10.0 \
     --hash=sha256:e2cfde8f79420f6deeffdeda9aaec3b6bc5abce947655d17ac662b126e48a60d \
