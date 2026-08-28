@@ -18,7 +18,7 @@
 
 Scores a single address against a policy (defaulting to ``cbpr-2026``)
 and reports the compliance findings, evaluated as of a date past the
-14 November 2026 cliff.
+announced cutover, which Swift deferred on 27 August 2026.
 
 Usage::
 

@@ -17,7 +17,8 @@
 """Example: ``assess_message``.
 
 Assesses every addressed party in a pacs.008 message against a policy,
-as of a date past the 14 November 2026 cliff.
+as of a date past the announced cutover, which Swift deferred on
+27 August 2026.
 
 Usage::
 
