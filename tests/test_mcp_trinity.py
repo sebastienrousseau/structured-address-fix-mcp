@@ -111,12 +111,16 @@ def test_policies_resource_mirrors_list_policies():
 
 
 def test_cutover_date_resource_mirrors_tool():
-    """The cutover-date resource returns the same payload as the tool."""
+    """The resource says exactly what the tool says.
+
+    Asserted against the tool rather than against a copy of its payload: two
+    hand-written copies drift, and a resource that still served the withdrawn
+    date while the tool reported the deferral would be the worst of both.
+    """
     payload = json.loads(server.cutover_date_resource())
-    assert payload == {
-        "date": "2026-11-14",
-        "scheme": "SWIFT CBPR+ UG2026",
-    }
+    assert payload == server.get_cutover_date()
+    assert payload["date"] is None
+    assert payload["status"] == "deferred"
 
 
 # ---------------------------------------------------------------------------

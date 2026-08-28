@@ -31,7 +31,9 @@ FINDING_EXPLANATIONS: dict[FindingCode, dict[str, str]] = {
         "summary": "The address uses only free-form AdrLine text.",
         "impact": (
             "Fully unstructured addresses are rejected by CBPR+, HVPS+, "
-            "T2, CHAPS, Fedwire and Lynx from 14 November 2026."
+            "T2, CHAPS, Fedwire and Lynx. Swift deferred the CBPR+ cutover "
+            "on 27 August 2026 and confirms new timing by December; "
+            "domestic schemes set their own."
         ),
         "fix": (
             "Provide structured elements (at minimum TwnNm and Ctry). Run "

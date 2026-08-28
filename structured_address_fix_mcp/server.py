@@ -18,8 +18,10 @@
 Exposes the ``structured-address-fix`` library's ISO 20022 postal-address
 remediation as MCP tools so any MCP-compatible client (Claude Desktop,
 IDEs, agents) can classify, assess, and remediate the postal addresses in
-pacs.008 / pain.001 messages ahead of the 14 November 2026 cliff, when
-fully unstructured addresses are rejected across the major schemes.
+pacs.008 / pain.001 messages ahead of the structured-address cutover, when
+fully unstructured addresses are rejected across the major schemes. Swift
+deferred that cutover on 27 August 2026 and will confirm replacement timing
+by December; the requirement stands, so the work does not change.
 
 Every tool is a thin, typed wrapper over
 :mod:`structured_address_fix.services` -- the single shared facade also
@@ -58,7 +60,11 @@ from typing import Annotated, Any
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field, ValidationError
 from structured_address_fix import services
-from structured_address_fix.config import NOV_2026_CLIFF
+from structured_address_fix.config import (
+    ANNOUNCED_CUTOVER,
+    BINDING_CUTOVER,
+    CUTOVER_DEFERRED_ON,
+)
 from structured_address_fix.domain.address import CanonicalAddress
 from structured_address_fix.domain.findings import FindingCode
 from structured_address_fix.errors import StructuredAddressError
@@ -350,13 +356,38 @@ def explain_finding(
 
 @server.tool(title="Get the ISO 20022 cutover date", annotations=_PURE_READ)
 def get_cutover_date() -> dict[str, Any]:
-    """Return the binding November 2026 structured-address cutover date.
+    """Report when the structured-address requirement binds, if it yet does.
 
-    Returns the date and the scheme that sets it.
+    Swift accepted a community request on 27 August 2026 and deferred every
+    payments change in Standards Release 2026, the structured-address
+    requirement among them. No replacement date has been set; Swift will
+    confirm timing by December 2026 at the latest.
+
+    ``date`` is therefore ``None``. It is left null rather than filled with
+    the withdrawn date because an agent reading this hands the answer to
+    somebody planning a migration, and a date with no force is worse than no
+    date at all. The requirement itself was agreed by the community in 2023
+    and stands: ``status`` says deferred, not withdrawn.
+
+    The deferral is Swift's, and covers CBPR+. Domestic market
+    infrastructures set their own timing and several were aligned to the same
+    November date; check the schemes you settle through rather than assuming
+    they moved with Swift.
     """
     return {
-        "date": NOV_2026_CLIFF.isoformat(),
+        "date": None if BINDING_CUTOVER is None else BINDING_CUTOVER.isoformat(),
+        "status": "deferred" if BINDING_CUTOVER is None else "binding",
         "scheme": "SWIFT CBPR+ UG2026",
+        "requirement_stands": True,
+        "announced_date": ANNOUNCED_CUTOVER.isoformat(),
+        "deferred_on": CUTOVER_DEFERRED_ON.isoformat(),
+        "replacement_timing": "Swift will confirm by December 2026 at the latest.",
+        "applies_to": "Swift CBPR+. Domestic schemes set their own timing.",
+        "source": (
+            "https://www.swift.com/news-events/news/"
+            "swift-accepts-community-request-extend-structured-address-"
+            "migration-iso-20022-payment-messages"
+        ),
     }
 
 
@@ -867,7 +898,8 @@ def review_address_remediation(
     if policy_id == _DEFAULT_POLICY:
         policy_note = (
             f"Work against the default policy '{policy_id}' -- the SWIFT "
-            "CBPR+ UG2026 rulebook that sets the 14 November 2026 cliff."
+            "CBPR+ UG2026 rulebook. Its 14 November 2026 cutover was "
+            "deferred on 27 August 2026; the rules stand, the date does not."
         )
     else:
         policy_note = (

@@ -330,12 +330,22 @@ def test_explain_finding_unknown_code_returns_error():
 
 
 def test_get_cutover_date():
-    """The cutover tool returns the binding Nov 2026 date and scheme."""
+    """The cutover tool reports the deferral rather than a withdrawn date.
+
+    ``date`` must be null while nothing binds. An agent reading this hands the
+    answer to somebody planning a migration, so the withdrawn date must not
+    appear where a caller reads the binding one -- only in ``announced_date``,
+    labelled as what it is.
+    """
     result = server.get_cutover_date()
-    assert result == {
-        "date": "2026-11-14",
-        "scheme": "SWIFT CBPR+ UG2026",
-    }
+
+    assert result["date"] is None
+    assert result["status"] == "deferred"
+    assert result["requirement_stands"] is True
+    assert result["announced_date"] == "2026-11-14"
+    assert result["deferred_on"] == "2026-08-27"
+    assert result["scheme"] == "SWIFT CBPR+ UG2026"
+    assert "swift.com" in result["source"]
 
 
 # ---------------------------------------------------------------------------
