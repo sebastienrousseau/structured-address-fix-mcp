@@ -345,7 +345,14 @@ def test_get_cutover_date():
     assert result["announced_date"] == "2026-11-14"
     assert result["deferred_on"] == "2026-08-27"
     assert result["scheme"] == "SWIFT CBPR+ UG2026"
-    assert "swift.com" in result["source"]
+    # Exact, not a substring match. A URL check by substring is the pattern
+    # CodeQL flags as incomplete sanitization, and the weaker assertion would
+    # pass on any address that merely contains the host.
+    assert result["source"] == (
+        "https://www.swift.com/news-events/news/"
+        "swift-accepts-community-request-extend-structured-address-"
+        "migration-iso-20022-payment-messages"
+    )
 
 
 # ---------------------------------------------------------------------------
