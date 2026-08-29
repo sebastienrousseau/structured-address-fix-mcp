@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.4] - 2026-08-29
+
+Documents four tools that were registered and missing from the README,
+and adds the benchmark and drift check this repository lacked.
+
+### Fixed
+
+- `normalize_country_code`, `split_street_and_building`,
+  `validate_postal_policy` and `parse_address_libpostal` were all
+  registered MCP tools and appeared nowhere in the README. They are now
+  listed.
+- The README said **9 tools**. The server registers **13**.
+
+### Added
+
+- `tests/test_readme_documents_every_tool.py`, which fails when a
+  registered tool is missing from the README, when a documented tool no
+  longer exists, or when the stated count disagrees with reality. All
+  three conditions were live when it was written.
+- `benches/bench_tool_dispatch.py` measures what an agent waits for. The
+  thirteen tools fall into two groups about two orders of magnitude
+  apart: lookups and string helpers an agent can call in a loop, and the
+  classify → assess → remediate pipeline, which is priced for screening
+  first and fixing second.
+- The benchmark reports **which parser backend** `parse_address_libpostal`
+  actually used. Without the optional `postal` extra a deterministic
+  fallback runs instead of libpostal, and a single number with no label
+  would invite quoting a figure for code that never executed.
+- `scripts/check_suite_consistency.py` and a scheduled `Suite
+  Consistency` workflow comparing this tree, and `structured-address-fix`,
+  against PyPI.
+
+### Changed
+
+- Version moved to `0.0.4` in step with `structured-address-fix`.
+
 ## [0.0.3] - 2026-08-28
 
 `get_cutover_date` reported a date Swift had withdrawn.
