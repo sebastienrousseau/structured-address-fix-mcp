@@ -21,7 +21,7 @@ favourite MCP client.
 > puts the readiness check and the fix in front of your agent — `assess_message`
 > flags the offending parties, `remediate_message` proposes the compliant form,
 > and `get_cutover_date` reports the binding date. **v0.0.2**, stdio transport,
-> 9 tools, Python 3.12+.
+> 13 tools, Python 3.12+.
 
 ## Contents
 
@@ -159,6 +159,10 @@ domain, validation, or value error they return an `{"error": ...}` payload.
 - `preview_patch` — Return the patch operations remediation would apply to a message (a dry run)
 - `explain_finding` — Explain what a finding code (e.g. `SAF001`) means and how to resolve it
 - `get_cutover_date` — Return the binding November 2026 structured-address cutover date and the scheme that sets it
+- `normalize_country_code` — Resolve a country name or code to its ISO 3166-1 alpha-2 code, accepting English names, local endonyms (Deutschland, España, Nippon) and everyday aliases (UK, USA, Holland, UAE)
+- `split_street_and_building` — Split a street line into street name, building and sub-building, handling both the leading-number convention (`10 Downing Street`) and the trailing-number one used across much of continental Europe
+- `validate_postal_policy` — Validate an address's `post_code` against a country's format policy (US ZIP / ZIP+4, GB alphanumeric, and others)
+- `parse_address_libpostal` — Parse a free-text address into ISO 20022 postal fields; uses libpostal's statistical parser when the optional `postal` extra is installed, and a deterministic fallback otherwise
 
 Optional parameters shared across the assessment/remediation tools: `policy_id`
 (defaults to `cbpr-2026`), `as_of` (an `YYYY-MM-DD` date that decides the cliff
