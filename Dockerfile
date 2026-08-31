@@ -4,7 +4,7 @@
 # The container runs the FastMCP server over stdio so an MCP client can
 # launch it directly with ``docker run -i --rm structured-address-fix-mcp``.
 
-FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4 AS builder
+FROM python:3.14-slim@sha256:cae66f2ef0ec51a9891263eeee7f987dacf0a9879e8aa9353d5606e0530619a5 AS builder
 
 WORKDIR /build
 
@@ -35,7 +35,7 @@ RUN python -m venv /opt/venv \
     && /opt/venv/bin/pip install .
 
 
-FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4
+FROM python:3.14-slim@sha256:cae66f2ef0ec51a9891263eeee7f987dacf0a9879e8aa9353d5606e0530619a5
 
 LABEL org.opencontainers.image.title="structured-address-fix-mcp" \
       org.opencontainers.image.description="Model Context Protocol server for the structured-address-fix ISO 20022 postal-address library." \
