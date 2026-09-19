@@ -83,6 +83,13 @@ pip install poetry
    ```
 7. **Push** and open a pull request
 
+## Sign-off (Required)
+
+Every commit must carry a `Signed-off-by:` trailer, which is you
+certifying the [Developer Certificate of Origin](DCO.txt). Add it with
+`git commit -s`. The DCO workflow fails a pull request whose commits lack
+it; fix a branch with `git rebase --signoff main`.
+
 ## Commit Signing (Required)
 
 All commits **must** be signed with SSH or GPG.
