@@ -22,7 +22,7 @@ python -c "import structured_address_fix_mcp; print(structured_address_fix_mcp._
 ## 2. Launch the server
 
 The package installs a `structured-address-fix-mcp` console entry point
-that starts the server over stdio (FastMCP's default transport):
+that starts the server over stdio (the default transport; `--transport streamable-http` or `sse` for HTTP):
 
 ```sh
 structured-address-fix-mcp
@@ -47,7 +47,7 @@ Add an entry to `~/Library/Application Support/Claude/claude_desktop_config.json
 }
 ```
 
-Restart Claude Desktop. The 9 tools are now available in any chat.
+Restart Claude Desktop. The 13 tools are now available in any chat.
 
 ### Other clients (Cursor, Continue, generic stdio MCP clients)
 
@@ -97,7 +97,7 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-## 6. The 9 tools at a glance
+## 6. The 13 tools at a glance
 
 | Tool | What it does |
 | --- | --- |
