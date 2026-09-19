@@ -7,6 +7,7 @@
 [![Quality][quality-badge]][quality-url]
 [![OpenSSF Scorecard][scorecard-badge]][scorecard-url]
 [![Documentation][docs-badge]][docs-url]
+[![Glama MCP server score][glama-badge]][glama-url]
 
 **A [Model Context Protocol][mcp] server that exposes the
 [`structured-address-fix`][core] ISO 20022 postal-address library as tools for
@@ -20,7 +21,7 @@ favourite MCP client.
 > debtor/creditor address is a free-text blob is rejected. `structured-address-fix-mcp`
 > puts the readiness check and the fix in front of your agent — `assess_message`
 > flags the offending parties, `remediate_message` proposes the compliant form,
-> and `get_cutover_date` reports the binding date. **v0.0.2**, stdio transport,
+> and `get_cutover_date` reports the binding date. **v0.0.4**, stdio transport,
 > 13 tools, Python 3.12+.
 
 ## Contents
@@ -346,3 +347,5 @@ and the [Model Context Protocol][mcp] Python SDK.
 [scorecard-url]: https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/structured-address-fix-mcp
 [tests-badge]: https://img.shields.io/github/actions/workflow/status/sebastienrousseau/structured-address-fix-mcp/ci.yml?branch=main&label=Tests&style=for-the-badge
 [tests-url]: https://github.com/sebastienrousseau/structured-address-fix-mcp/actions/workflows/ci.yml
+[glama-badge]: https://glama.ai/mcp/servers/sebastienrousseau/structured-address-fix-mcp/badges/score.svg
+[glama-url]: https://glama.ai/mcp/servers/sebastienrousseau/structured-address-fix-mcp
