@@ -11,9 +11,9 @@ assessing, and remediating postal addresses ahead of the 14 November 2026
 cliff, when fully unstructured addresses are rejected across CBPR+, HVPS+,
 T2, CHAPS, and Fedwire.
 
-## Where we are (v0.0.2, shipped 2026-07-17)
+## Where we are (v0.0.4, shipped 2026-08-29)
 
-- **9 tools**, each a thin typed wrapper over the shared
+- **13 tools**, each a thin typed wrapper over the shared
   `structured_address_fix.services` facade:
   - Policy discovery: `list_policies`
   - Classification: `classify_address` (structured / hybrid /
@@ -28,24 +28,28 @@ T2, CHAPS, and Fedwire.
   - Explanation: `explain_finding` (what a finding code means and how
     to resolve it)
   - Cliff date: `get_cutover_date` (the binding November 2026 cutover)
-- **Stdio transport** (FastMCP default): one process per operator,
-  launched by the MCP client, no network surface, no authentication
-  needed.
+  - Address parts: `normalize_country_code`, `split_street_and_building`,
+    `validate_postal_policy`, `parse_address_libpostal`
+- **Three transports from one command line** (unreleased, ADR 0001):
+  stdio by default (one process per operator, launched by the MCP
+  client, no network surface), plus `--transport streamable-http`
+  (both current protocol revisions on one endpoint) and
+  `--transport sse`. The HTTP listeners bind loopback and carry no
+  authentication of their own.
 - **Supply chain**: 100% line + branch coverage, OpenSSF Scorecard,
   SLSA Build L3 + PEP 740 sigstore attestations on every release,
   CycloneDX 1.6 + SPDX 2.3 + pip-licenses SBOMs on every GitHub
   release, NIST SP 800-218 SSDF practice mapping in `SECURITY.md`.
 
-## Fast-follow — HTTP transport + observability + entitlement gating
+## Fast-follow — authenticated HTTP + observability + entitlement gating
 
 Goal: a shared, multi-tenant deployment shape, mirroring the sibling
 `camt053-mcp` server and the core library's plugin design.
 
-- **HTTP/SSE transport variant**:
-  `structured-address-fix-mcp --transport=http --bind=…` alongside the
-  default stdio, with an optional tenant header forwarded into the
-  tool-visible `Context` for multi-tenant scoping.
-- **OAuth 2.1 resource-server auth (RFC 9728)** on the HTTP transport:
+- **Tenant scoping on the HTTP transports**: an optional tenant header
+  forwarded into the tool-visible `Context`, so one listener can serve
+  several operators.
+- **OAuth 2.1 resource-server auth (RFC 9728)** on the HTTP transports:
   bearer JWTs validated against a configured issuer / audience with a
   cached JWKS, `WWW-Authenticate` challenges carrying `resource_metadata`,
   and a static-bearer dev-mode fallback.
@@ -72,8 +76,8 @@ Goal: post-Nov-2026-cliff, field-tested behaviour.
 
 - **Embedded LLM**: this server delegates all inference to the client's
   model via MCP; no bundled LLM weights, no hosted inference endpoint.
-- **OAuth provider integration**: the planned HTTP transport
-  authenticates by validating tokens from your existing authorization
+- **OAuth provider integration**: the planned authentication layer
+  validates tokens from your existing authorization
   server (Okta, Auth0, Entra ID, ...); running the authorization server
   is the operator's job.
 
