@@ -1,10 +1,14 @@
 # Deployment cookbook
 
 End-to-end recipes for wiring `structured-address-fix-mcp` into MCP
-clients. v0.1 speaks **stdio only** — one process per operator, launched
-by the client, no network surface and no authentication. (A shared
-HTTP/OAuth transport for multi-tenant deployments is on the
-[roadmap](../ROADMAP.md), not in this release.)
+clients. stdio is the default: one process per operator, launched by the
+client, no network surface and no authentication. `--transport
+streamable-http` and `--transport sse` listen on `--host`/`--port`
+instead (loopback and 8000 by default) and carry no authentication of
+their own; see the README's Transports section and
+[ADR 0001](adr/0001-three-transports-one-command-line.md). OAuth 2.1 on
+the HTTP transports is on the [roadmap](../ROADMAP.md), not in this
+release.
 
 The recipes are **opinionated minimums**: enough to be useful, small
 enough to read in one sitting.
@@ -172,10 +176,12 @@ docker build \
 
 ## Recipes you'll likely want next
 
-- **HTTP / multi-tenant.** Not in v0.1. The [roadmap](../ROADMAP.md)
-  tracks an HTTP/SSE transport with OAuth 2.1 resource-server auth,
-  Prometheus metrics, and entitlement gating — mirroring the sibling
-  `camt053-mcp` server.
+- **HTTP behind a gateway.** `structured-address-fix-mcp --transport
+  streamable-http --host 0.0.0.0` serves `/mcp` on a routable address;
+  put it behind a gateway you trust, because the listener authenticates
+  nobody. The [roadmap](../ROADMAP.md) tracks OAuth 2.1 resource-server
+  auth, Prometheus metrics, and entitlement gating on that transport —
+  mirroring the sibling `camt053-mcp` server.
 - **Pin the core.** Once `structured-address-fix` is published, pin both
   it and this server to exact versions in your deployment venv so agent
   behaviour is reproducible.

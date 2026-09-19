@@ -63,7 +63,7 @@ reporters in the advisory unless anonymity is requested.
 The following are in scope:
 
 - The `structured-address-fix-mcp` MCP server as published in this repository,
-  including the FastMCP tools it exposes over stdio, and the way it surfaces
+  including the tools it exposes over stdio, streamable HTTP and SSE, and the way it surfaces
   the underlying `structured-address-fix` library to MCP agents.
 - Handling of agent-supplied tool arguments and the payloads returned to
   agents, including error envelopes.
@@ -110,7 +110,7 @@ the concrete control(s) that implement it in this repo.
 | **PW.6** Configure build processes to improve security | Reproducible builds via `poetry build` with locked dependencies; CI uses pinned action versions; minimum-required GH Actions permissions. |
 | **PW.7** Review and analyze human-readable code | All changes go through PRs with required review; CodeQL static analysis runs on push/PR; ruff + mypy + bandit on every change. |
 | **PW.8** Test executable code | pytest on Python 3.12/3.13 at 100% line + branch coverage; per-tool runnable examples auto-exercised in CI. |
-| **PW.9** Configure software with secure defaults | Stdio transport binds to the local process owner only (no network listener); tools return errors as data instead of raising into the client. |
+| **PW.9** Configure software with secure defaults | stdio by default (no network listener); the HTTP transports bind loopback unless told otherwise and carry no authentication, so a routable deployment sits behind a gateway; tools return errors as data instead of raising into the client. |
 | **RV.1** Identify and confirm vulnerabilities on an ongoing basis | Dependabot daily; `bandit` in CI; OpenSSF Scorecard weekly; GitHub Security Advisories accept reports. |
 | **RV.2** Assess, prioritise, and remediate vulnerabilities | Coordinated-disclosure timeline above (3-day ack / 7-day assessment / 30-day fix); CHANGELOG + advisory at fix publication. |
 | **RV.3** Analyze root causes | Each security advisory captures root cause + remediation in the GitHub Security Advisory body; lessons feed back into added regression tests. |

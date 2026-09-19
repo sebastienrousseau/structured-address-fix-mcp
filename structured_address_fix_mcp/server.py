@@ -44,13 +44,13 @@ Launching the server:
           }
         }
 
-The server communicates over stdio by default (MCPServer's default
-transport).
+The server speaks stdio by default; ``--transport streamable-http`` or
+``--transport sse`` listens on ``--host``/``--port`` instead (see
+:mod:`structured_address_fix_mcp._cli`).
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import re
 import unicodedata
@@ -73,7 +73,7 @@ from structured_address_fix.services.facade import (
     default_registry,
 )
 
-from structured_address_fix_mcp import __version__
+from structured_address_fix_mcp import __version__, _cli
 from structured_address_fix_mcp._mcp_compat import build_server
 from structured_address_fix_mcp.explanations import FINDING_EXPLANATIONS
 
@@ -977,32 +977,17 @@ def policy_resource(policy_id: str) -> str:
     return json.dumps(_dump(info))
 
 
-def _build_parser() -> argparse.ArgumentParser:
-    """Build the command-line argument parser for the server."""
-    parser = argparse.ArgumentParser(
-        prog="structured-address-fix-mcp",
-        description=(
-            "structured-address-fix MCP server (stdio transport). Exposes "
-            "ISO 20022 postal-address assessment and remediation as MCP "
-            "tools."
-        ),
-    )
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"structured-address-fix-mcp {__version__}",
-    )
-    return parser
-
-
 def main(argv: list[str] | None = None) -> None:
-    """Run the MCP server over stdio.
+    """Run the MCP server (the ``structured-address-fix-mcp`` entry point).
 
-    Parses arguments (currently only ``--version``) and starts the MCPServer
-    stdio transport, which an MCP client launches as a subprocess.
+    stdio by default; ``--transport streamable-http`` or ``--transport sse``
+    listens on ``--host``/``--port`` instead. See
+    :mod:`structured_address_fix_mcp._cli`.
+
+    Args:
+        argv: Command-line arguments; ``None`` reads ``sys.argv[1:]``.
     """
-    _build_parser().parse_args(argv)
-    server.run()
+    _cli.serve(server, argv, "structured-address-fix-mcp", __version__)
 
 
 if __name__ == "__main__":  # pragma: no cover

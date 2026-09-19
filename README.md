@@ -21,8 +21,8 @@ favourite MCP client.
 > debtor/creditor address is a free-text blob is rejected. `structured-address-fix-mcp`
 > puts the readiness check and the fix in front of your agent — `assess_message`
 > flags the offending parties, `remediate_message` proposes the compliant form,
-> and `get_cutover_date` reports the binding date. **v0.0.4**, stdio transport,
-> 13 tools, Python 3.12+.
+> and `get_cutover_date` reports the binding date. **v0.0.4**, stdio, streamable
+> HTTP and SSE transports, 13 tools, Python 3.12+.
 
 ## Contents
 
@@ -30,6 +30,7 @@ favourite MCP client.
 - [The ISO 20022 MCP Suite](#the-iso-20022-mcp-suite)
 - [Install](#install)
 - [Quick Start](#quick-start)
+- [Transports](#transports) — stdio, streamable HTTP (2026-07-28 and 2025-11-25) and SSE from one command line
 - [Tools](#tools)
 - [Using the tools](#using-the-tools)
 - [Related MCP Servers](#related-mcp-servers)
@@ -67,7 +68,7 @@ identically. Tools return JSON-serialisable data; on an error they return an
 
 ```mermaid
 flowchart LR
-    A["MCP client<br/>(Claude Desktop, IDE, agent)"] -->|stdio| B["structured-address-fix-mcp"]
+    A["MCP client<br/>(Claude Desktop, IDE, agent)"] -->|stdio, streamable HTTP or SSE| B["structured-address-fix-mcp"]
     B -->|delegates to| C["structured_address_fix.services"]
     C -->|classify + assess + remediate| D["ISO 20022 postal addresses<br/>(pacs.008 / pain.001)"]
 ```
@@ -124,7 +125,7 @@ python -m pip install -U structured-address-fix-mcp
 For the 10-minute install → MCP client config → first conversation
 tutorial, see [`docs/quickstart.md`](docs/quickstart.md).
 
-Launch the server over stdio (the FastMCP default transport):
+Launch the server over stdio (the default transport):
 
 ```sh
 structured-address-fix-mcp
@@ -141,9 +142,36 @@ client's configuration:
 }
 ```
 
-The command speaks MCP on stdin/stdout — it is meant to be launched by an
-MCP client, not used interactively. The agent can then call the tools below
-to assess and remediate postal addresses on demand.
+The command speaks MCP on stdin/stdout by default — it is meant to be
+launched by an MCP client, not used interactively. For a shared deployment
+or an HTTP client, see [Transports](#transports). The agent can then call
+the tools below to assess and remediate postal addresses on demand.
+
+## Transports
+
+One command line, three transports:
+
+| Command | Transport | Endpoint | Protocol revisions |
+| :--- | :--- | :--- | :--- |
+| `structured-address-fix-mcp` | stdio | the client spawns the process | 2026-07-28, 2025-11-25 |
+| `structured-address-fix-mcp --transport streamable-http` | Streamable HTTP | `http://127.0.0.1:8000/mcp` | 2026-07-28 (stateless, `server/discover`) and 2025-11-25 (`initialize`, `Mcp-Session-Id`) on the same endpoint; responses stream as server-sent events, `GET` opens the server-to-client stream |
+| `structured-address-fix-mcp --transport sse` | HTTP+SSE (2024-11-05) | `http://127.0.0.1:8000/sse` and `/messages/` | for clients that still expect the older transport |
+
+`--host` and `--port` change the bind address (defaults `127.0.0.1` and
+`8000`). The HTTP transports carry no authentication of their own: bind
+loopback, or put the server behind a gateway you trust before binding a
+routable address. Every release is verified over streamable HTTP with
+[scout](https://github.com/sebastienrousseau/scout) in both protocol
+eras and over SSE with the MCP SDK client; see
+[ADR 0001](docs/adr/0001-three-transports-one-command-line.md).
+
+```json
+{
+  "mcpServers": {
+    "structured-address-fix": { "url": "http://127.0.0.1:8000/mcp" }
+  }
+}
+```
 
 ## Tools
 
@@ -242,10 +270,11 @@ servers for banking and financial-services AI agents:
   MCP-aware host (Claude Desktop, the IDE plugins, an agent framework). For
   scripted / CI use, the `structured-address-fix` CLI covers the same ground
   without the stdio protocol overhead.
-- **You need a long-lived network service.** v0.1 speaks **stdio only** —
-  one process per operator, launched by the client, no network surface. An
-  HTTP/OAuth transport for shared, multi-tenant deployments is on the
-  [roadmap](ROADMAP.md), not in this release.
+- **You need an authenticated, multi-tenant service.** The HTTP transports
+  ([Transports](#transports)) carry no authentication of their own and bind
+  loopback by default; put them behind a gateway you trust. OAuth 2.1
+  resource-server auth and tenant scoping are on the [roadmap](ROADMAP.md),
+  not in this release.
 - **You need streaming responses.** Tool calls return whole values, not
   streams. Large messages are assessed and remediated in one call, not
   chunked over multiple responses.
@@ -300,10 +329,13 @@ Private Vulnerability Reporting, not public issues.
 - [`CHANGELOG.md`](CHANGELOG.md) — release notes
 - [`SECURITY.md`](SECURITY.md) — disclosure + supported versions
 - [`SUPPORT.md`](SUPPORT.md) — how to get help
-- [`ROADMAP.md`](ROADMAP.md) — what's next (HTTP/OAuth transport, observability, entitlement gating)
+- [`ROADMAP.md`](ROADMAP.md) — what's next (OAuth on the HTTP transports, observability, entitlement gating)
 - [`MAINTAINERS.md`](MAINTAINERS.md) — who can merge
 - [`docs/quickstart.md`](docs/quickstart.md) — 10-minute install → first conversation
-- [`docs/deployment-cookbook.md`](docs/deployment-cookbook.md) — stdio client configs (Claude Desktop, Cursor, containers)
+- [`docs/deployment-cookbook.md`](docs/deployment-cookbook.md) — client configs (Claude Desktop, Cursor, containers) and the HTTP transports
+- [`docs/adr/`](docs/adr/index.md) — architecture decision records
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — a map of the codebase
+- [`RELEASING.md`](RELEASING.md) — how a release is cut
 - [`examples/`](examples/) — runnable scripts
 - [`glama.json`](glama.json) — Glama directory manifest
 

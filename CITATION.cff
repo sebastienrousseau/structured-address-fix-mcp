@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+cff-version: 1.2.0
+message: "If you use structured-address-fix-mcp in research or production write-ups, please cite it as below."
+type: software
+title: "structured-address-fix-mcp: Model Context Protocol server for ISO 20022 postal addresses"
+abstract: >-
+  A Model Context Protocol server exposing the structured-address-fix
+  library to AI agents: thirteen tools that classify a postal address as
+  structured, hybrid or unstructured, assess it or every addressed party in
+  a pacs.008 / pain.001 message against a scheme policy, and remediate it
+  into the structured form the November 2026 cutover requires.
+authors:
+  - family-names: Rousseau
+    given-names: Sebastien
+    email: sebastian.rousseau@gmail.com
+version: "0.0.4"
+date-released: "2026-08-29"
+license: "Apache-2.0 OR MIT"
+repository-code: "https://github.com/sebastienrousseau/structured-address-fix-mcp"
+url: "https://sebastienrousseau.github.io/structured-address-fix/"
+keywords:
+  - ISO 20022
+  - postal address
+  - structured address
+  - CBPR+
+  - Model Context Protocol
+  - MCP
+  - AI agents
+  - payments
