@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.6] - 2026-10-04
+
+### Documentation
+
+- Standardized documentation formatting and license references.
+- Synchronized release version metadata across packaging descriptors.
+
 ## [0.0.5] - 2026-10-03
 
 ### Added
@@ -148,4 +155,6 @@ addresses are rejected across CBPR+, HVPS+, T2, CHAPS, and Fedwire.
   SBOMs on every GitHub release; NIST SP 800-218 SSDF practice mapping
   in `SECURITY.md`; MCP registry + Glama directory manifests.
 
+[0.0.6]: https://github.com/sebastienrousseau/structured-address-fix-mcp/releases/tag/v0.0.6
+[0.0.5]: https://github.com/sebastienrousseau/structured-address-fix-mcp/releases/tag/v0.0.5
 [0.0.1]: https://github.com/sebastienrousseau/structured-address-fix-mcp/releases/tag/v0.0.2

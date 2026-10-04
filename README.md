@@ -28,7 +28,7 @@ favourite MCP client.
 > debtor/creditor address is a free-text blob is rejected. `structured-address-fix-mcp`
 > puts the readiness check and the fix in front of your agent — `assess_message`
 > flags the offending parties, `remediate_message` proposes the compliant form,
-> and `get_cutover_date` reports the binding date. **v0.0.5**, stdio, streamable
+> and `get_cutover_date` reports the binding date. **v0.0.6**, stdio, streamable
 > HTTP and SSE transports, 13 tools, Python 3.12+.
 
 ## Contents
