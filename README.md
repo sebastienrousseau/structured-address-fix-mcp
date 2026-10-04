@@ -9,6 +9,11 @@
 [![Documentation][docs-badge]][docs-url]
 [![Glama MCP server score][glama-badge]][glama-url]
 
+<p align="center">
+  <img src=".github/demo.gif" alt="structured-address-fix-mcp Demo" width="100%" />
+</p>
+
+
 **A [Model Context Protocol][mcp] server that exposes the
 [`structured-address-fix`][core] ISO 20022 postal-address library as tools for
 AI agents and assistants** — classify an address's shape, assess it against a
