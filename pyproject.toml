@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "structured-address-fix-mcp"
-version = "0.0.4"
+version = "0.0.5"
 description = "Model Context Protocol (MCP) server exposing the structured-address-fix ISO 20022 address-remediation library as agent tools."
 authors = ["Sebastien Rousseau <sebastian.rousseau@gmail.com>"]
 license = "Apache-2.0 OR MIT"
@@ -108,6 +108,7 @@ ignore = ["E501"]
 "benches/*.py" = ["E402"]
 "__init__.py" = ["F401"]
 "tests/conftest.py" = ["E402"]
+"tests/test_suite_conformance.py" = ["UP036"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -151,6 +152,16 @@ ignore_missing_imports = true
 # Optional binding behind the ``libpostal`` extra; not installed in CI/dev,
 # and it ships no type stubs.
 module = "postal.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Agent frameworks are optional extras, lazily imported by adapters.py and not
+# present when type-checking the server in isolation.
+module = [
+    "langchain_core.*",
+    "crewai.*",
+    "llama_index.*",
+]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

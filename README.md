@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 OR MIT -->
+
 # structured-address-fix-mcp: An MCP Server for ISO 20022 Postal Addresses
 
 [![PyPI Version][pypi-badge]][07]
@@ -8,6 +10,11 @@
 [![OpenSSF Scorecard][scorecard-badge]][scorecard-url]
 [![Documentation][docs-badge]][docs-url]
 [![Glama MCP server score][glama-badge]][glama-url]
+
+<p align="center">
+  <img src=".github/demo.gif" alt="structured-address-fix-mcp Demo" width="100%" />
+</p>
+
 
 **A [Model Context Protocol][mcp] server that exposes the
 [`structured-address-fix`][core] ISO 20022 postal-address library as tools for
@@ -21,7 +28,7 @@ favourite MCP client.
 > debtor/creditor address is a free-text blob is rejected. `structured-address-fix-mcp`
 > puts the readiness check and the fix in front of your agent — `assess_message`
 > flags the offending parties, `remediate_message` proposes the compliant form,
-> and `get_cutover_date` reports the binding date. **v0.0.4**, stdio, streamable
+> and `get_cutover_date` reports the binding date. **v0.0.5**, stdio, streamable
 > HTTP and SSE transports, 13 tools, Python 3.12+.
 
 ## Contents
