@@ -64,7 +64,7 @@ If the command isn't found after a restart, use the absolute path:
 }
 ```
 
-Restart Claude Desktop; the 9 tools appear in any chat.
+Restart Claude Desktop; the 13 tools appear in any chat.
 
 ---
 
