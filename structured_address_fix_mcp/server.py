@@ -90,7 +90,7 @@ server = build_server("structured-address-fix", __version__)
 # passing snake_case to 1.x silently lands in an extra attribute and
 # leaves the real field None, dropping the annotation without error.
 # mypy resolves against 2.x, where the alias is invisible to it.
-_PURE_READ = ToolAnnotations(
+_PURE_READ = ToolAnnotations(  # type: ignore[call-arg]
     readOnlyHint=True,
     destructiveHint=False,
     idempotentHint=True,
