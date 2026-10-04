@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 OR MIT -->
+
 # structured-address-fix-mcp: An MCP Server for ISO 20022 Postal Addresses
 
 [![PyPI Version][pypi-badge]][07]
